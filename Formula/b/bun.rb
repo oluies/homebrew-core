@@ -3,8 +3,8 @@ class Bun < Formula
   homepage "https://bun.com/"
   # Need git checkout to build. Alternatively could set GIT_SHA if we extract the commit.
   url "https://github.com/oven-sh/bun.git",
-      tag:      "bun-v1.4.3",
-      revision: "c6da4a4d3010e5553438c60f6bd76d981976867c"
+      tag:      "bun-v1.4.4",
+      revision: "38afee6c84fcf48c0edb2466aa4b27d287a59c30"
   license all_of: [
     "MIT",
     "LGPL-2.0-or-later", # JavaScriptCore
@@ -89,6 +89,8 @@ class Bun < Formula
   # Also replaces nightly-only `core::mem::type_info::of` to build with stable Rust
   patch :DATA
 
+  allow_network_access! :test
+
   # Performing a manual shallow git clone since a full clone of WebKit repo is ~18GB in size
   # and brew's unpack strategy will duplicate a resource requiring over 36GB of disk space.
   # This exceeds limit of GitHub-hosted runners. A shallow git clone is instead ~7GB.
@@ -111,9 +113,14 @@ class Bun < Formula
     end
   end
 
+  def fetch
+    fetch_webkit
+    system "cargo", "fetch", *std_cargo_fetch_args
+  end
+
   # Based on https://github.com/oven-sh/bun/blob/main/CONTRIBUTING.md#building-webkit-locally--debug-mode-of-jsc
   def install
-    bootstrap_version = File.read("scripts/build/ci-images/spec.ts")[/^\s*bun: \{ version: "(\d+(?:\.\d+)+)" \}/, 1]
+    bootstrap_version = File.read("scripts/build/ci-images/spec.ts")[/^\s*bun: \{\n\s*version: "(\d+(?:\.\d+)+)"/m, 1]
     odie "Update bootstrap to #{bootstrap_version}" if resource("bootstrap").version != bootstrap_version
 
     # Upstream only allows building for specific microarchitectures they support
@@ -135,7 +142,6 @@ class Bun < Formula
     # compilers on top of the outer build and Homebrew's job limit is ignored.
     ENV["CMAKE_BUILD_PARALLEL_LEVEL"] = ENV.make_jobs.to_s
 
-    fetch_webkit
     resource("bootstrap").stage("bootstrap")
     ENV.prepend_path "PATH", buildpath/"bootstrap"
 
