@@ -5,6 +5,7 @@ class Duckdb < Formula
       tag:      "v2.0.0",
       revision: "d54cbbe3df17e8e5ce68312f483b4155836112aa"
   license "MIT"
+  revision 1
 
   bottle do
     sha256 cellar: :any, arm64_golden_gate: "3c85bb18d505e5c8905aaafe1f74911c94cd1cb9703e6a3364e2e92ff64a0758"
@@ -23,6 +24,13 @@ class Duckdb < Formula
       -DENABLE_EXTENSION_AUTOLOADING=1
       -DENABLE_EXTENSION_AUTOINSTALL=1
     ]
+
+    # Label the build as the release it is built from. DuckDB's CMake sets
+    # v<X.Y>.0-dev<N> for every build unless DUCKDB_VERSION or
+    # OVERRIDE_GIT_DESCRIBE is given, the release tag's own commit included,
+    # and a -dev build resolves extensions under its source id rather than the
+    # release's, so `INSTALL <extension>` 404s.
+    args << "-DOVERRIDE_GIT_DESCRIBE=v#{version}"
 
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
     system "cmake", "--build", "build"
